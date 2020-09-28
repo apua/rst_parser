@@ -1,0 +1,9 @@
+# Vim
+.*.sw[op]
+
+# Python
+__pycache__/
+*.py[cod]
+
+# virtual environment
+venv
