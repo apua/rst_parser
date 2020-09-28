@@ -52,10 +52,9 @@ class Document(Node): pass
 class Paragraph(Node): pass
 
 
-def parse_line_by_line(text):
-    T = enumerate(text.splitlines())  # lazy
+def parse_line_by_line(enumlines):
     buff = []
-    for num, raw_line in T:
+    for num, raw_line in enumlines:
         line = raw_line.rstrip()
         if line:
             buff.append(line)
@@ -68,7 +67,9 @@ def parse_line_by_line(text):
 
 
 def parse(text):
-    return Document(*parse_line_by_line(text))
+    enumlines = enumerate(text.splitlines())
+    nodes = parse_line_by_line(enumlines)
+    return Document(*nodes)
             
 
 sample_123 = (
