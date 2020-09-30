@@ -5,5 +5,10 @@
 __pycache__/
 *.py[cod]
 
+# Yarn
+node_modules/
+yarn.lock
+yarn-error.log
+
 # virtual environment
-venv
+venv/

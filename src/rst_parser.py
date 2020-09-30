@@ -72,10 +72,12 @@ def parse(text):
     return Document(*nodes)
             
 
-sample_123 = (
-    'blah blah blah blah\nblah blah blah blah   \n\n'
-    'blah blah blah blah\t\n'
-    )
+sample_123 = ''.join([
+    'blah blah blah blah\n',
+    'blah blah blah blah   \n',
+    '\n'
+    'blah blah blah blah\t\n',
+    ])
 
 
 dom_123 = Document(
