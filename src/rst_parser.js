@@ -17,10 +17,10 @@ sample_123 = (
     'blah blah blah blah\t\n'+
     '')
 
-dom_123 = {'tag': Document, 'elements': [
-    {'tag': Paragraph, 'elements': ['blah blah blah blah', 'blah blah blah blah']},
-    {'tag': Paragraph, 'elements': ['blah blah blah blah']},
-    ]}
+dom_123 = [Document,
+    [Paragraph, 'blah blah blah blah', 'blah blah blah blah'],
+    [Paragraph, 'blah blah blah blah'],
+    ]
 
 test('sample', () => {
   expect(parse(sample_123)).toEqual(sample_123);
