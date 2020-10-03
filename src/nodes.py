@@ -20,7 +20,6 @@ document:
 #. literal_block
 """
 
-
 from data_structure import Node
 
 
