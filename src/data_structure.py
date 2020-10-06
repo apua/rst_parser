@@ -36,3 +36,8 @@ class Node:
 
     def __repr__(self):
         return '\n'.join(self.reprlines())
+
+    def __eq__(self, n):
+        return self.__class__ == n.__class__ \
+                and self.attrs == n.attrs \
+                and self.nodes == n.nodes
