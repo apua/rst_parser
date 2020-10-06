@@ -32,7 +32,11 @@ class Paragraph(Node):
 
     @classmethod
     def fetch(cls, text):
-        return '\n'.join(text.get_nonempty_lines())
+        def get_nonempty_lines(text):
+            while text and text[0] != '':
+                yield text.pop(0)
+
+        return '\n'.join(get_nonempty_lines(text))
 
     @classmethod
     def parse(cls, text):
@@ -47,10 +51,14 @@ class Document(Node):
     def parse(cls, text):
         block_types = tuple(map(globals().__getitem__, cls.block_types))
 
+        def lstrip_empty_lines(text):
+            while text and text[0] == '':
+                text.pop(0)
+
         def _parse(text):
             while True:
-                text.lstrip_empty_lines()
-                if text.is_empty:
+                lstrip_empty_lines(text)
+                if not text:
                     break
 
                 node_type = next(node_type for node_type in block_types if node_type.match(text))
@@ -60,50 +68,61 @@ class Document(Node):
 
 
 class BufferedText:
+    r"""
+    Provide `list`-like API for inline manipulation
+
+    -   __bool__
+    -   __getitem__
+    -   clear
+    -   pop
+    """
     def __init__(self, text):
-        self.lines = map(str.rstrip, text.splitlines())
-        self.buffer = []
+        self._lines = map(str.rstrip, text.splitlines())
+        self._buffer = []
         self._is_empty = False
 
-    def __bool__(self):
-        return not self.is_empty
+    def _readline(self):
+        return self._buffer.append(next(self._lines))
 
-    @property
-    def is_empty(self):
-        if self._is_empty:
+    def __bool__(self):
+        if self._buffer:
             return True
 
-        if not self.buffer:
-            try:
-                self.buffer.append(next(self.lines))
-            except StopIteration:
-                return True
+        if self._is_empty:
+            return False
 
-        return False
-
-    def lstrip_empty_lines(self):
-        while self.buffer:
-            if self.buffer[0] == '':
-                self.buffer.pop(0)
-
-        for line in self.lines:
-            if line != '':
-                self.buffer.append(line)
-                break
-        else:
+        try:
+            self._readline()
+        except StopIteration:
             self._is_empty = True
+            return False
+        else:
+            return True
 
-    def get_nonempty_lines(self):
-        while self.buffer:
-            line = self.buffer.pop(0)
-            if line:
-                yield line
-            else:
-                return
+    def __getitem__(self, idx):
+        if not (isinstance(idx, int) and idx >= 0):
+            raise TypeError
 
-        for line in self.lines:
-            if line:
-                yield line
-            else:
-                self.buffer.append(line)
-                return
+        if self._is_empty:
+            raise IndexError
+
+        lack = idx + 1 - len(self._buffer)
+
+        if lack <= 0:
+            return self._buffer[idx]
+
+        try:
+            for i in range(lack):
+                self._readline()
+        except StopIteration:
+            raise IndexError
+        else:
+            return self._buffer[idx]
+
+    def clear(self):
+        self._buffer.clear()
+        self._is_empty = True
+
+    def pop(self, idx):
+        self[idx]  # ensure the value exists
+        return self._buffer.pop(idx)
