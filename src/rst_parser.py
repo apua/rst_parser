@@ -6,21 +6,6 @@ def parse(text):
     return Document.parse(text)
 
 
-def test_multi_paragraph():
-    s = (
-            'word 1 word 2\n'
-            'line 2\n'
-            '\n'
-            '\n'
-            'line 3\n'
-            )
-    d = Document(
-            Paragraph('word 1 word 2\nline 2'),
-            Paragraph('line 3'),
-            )
-    assert parse(s) == d
-
-
 def test_empty_document():
     assert parse('') == Document()
     assert parse('\n') == Document()
@@ -34,3 +19,7 @@ def test_paragraph_startswith():
 def test_paragraph_endswith():
     assert parse('line') == Document(Paragraph('line'))
     assert parse('line\n' + '\n'*3) == Document(Paragraph('line'))
+
+def test_multi_paragraph():
+    assert parse('word 1 word 2\nline 2\n\n\nline 3\n') == \
+            Document(Paragraph('word 1 word 2', 'line 2'), Paragraph('line 3'))

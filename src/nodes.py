@@ -32,15 +32,12 @@ class Paragraph(Node):
 
     @classmethod
     def fetch(cls, text):
-        def get_nonempty_lines(text):
-            while text and text[0] != '':
-                yield text.pop(0)
-
-        return '\n'.join(get_nonempty_lines(text))
+        while text and text[0] != '':
+            yield text.pop(0)
 
     @classmethod
     def parse(cls, text):
-        return cls(text)
+        return cls(*text)
 
 
 class Document(Node):
