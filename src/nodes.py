@@ -40,9 +40,69 @@ class Paragraph(Node):
         return cls(*text)
 
 
+class LiteralBlock(Node):
+    @classmethod
+    def match(cls, text):
+        if text and text[0] == '::':
+            try:
+                line = text[1]
+            except IndexError:
+                return True
+            else:
+                return line == '' or line.startswith(' ')
+        else:
+            return False
+
+    @classmethod
+    def fetch(cls, text):
+        # remove colons
+        colons = text.pop(0)
+        assert colons == '::'
+
+        if not text:
+            print('[WARN][LiteralBlock] EOF right after `::`')
+            return
+
+        # lstrip blank lines
+        blanklines_before = False
+        while text and text[0] == '':
+            blanklines_before = True
+            text.pop(0)
+        if not blanklines_before:
+            print('[WARN][LiteralBlock] Blank line missing before literal block')
+
+        indented = []
+        while text \
+                and (text[0].startswith(' ') or text[0] == ''):  # XXX: assume space only
+            indented.append(text.pop(0))
+
+        if not indented:
+            print('[WARN][LiteralBlock] None found')
+            return
+
+        # rstrip blank lines
+        for idx in range(len(indented), 0, -1):
+            if indented[idx-1] != '':
+                break
+        if text and idx == len(indented):
+            print('[WARN][LiteralBlock] Ends without a blank line')
+        indented = indented[:idx]
+
+        assert indented
+
+        non_empty = filter(None, indented)
+        len_leading_space = lambda s: len(s) - len(s.lstrip())
+        len_indent = min(map(len_leading_space, non_empty))
+        yield from (s[len_indent:] if s else '' for s in indented)
+
+    @classmethod
+    def parse(cls, text):
+        return cls(*text)
+
+
 class Document(Node):
     # XXX: require `match`, `fetch`, `parse` methods
-    block_types = ['Paragraph']
+    block_types = ['LiteralBlock', 'Paragraph']
 
     @classmethod
     def parse(cls, text):

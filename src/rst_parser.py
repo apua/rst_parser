@@ -24,18 +24,30 @@ def test_multi_paragraph():
     assert parse('word 1 word 2\nline 2\n\n\nline 3\n') == \
             Document(Paragraph('word 1 word 2', 'line 2'), Paragraph('line 3'))
 
-def test_literal_block_prefix_colons():
+def test_literal_block_hang_colons():
     assert parse('::line') == Document(Paragraph('::line'))
     assert parse('::    line') == Document(Paragraph('::    line'))
     assert parse('::\nline') == Document(Paragraph('::', 'line'))
 
     # in Docutils, it is definition with info literal;
-    # in this implementation, it is literal block
-    assert parse('::\n  line') == Document(LiteralBlock('line'))
+    # in this implementation, it is a literal block
+    # [WARN][LiteralBlock] Blank line missing before literal block
+    assert parse('::\n  literal') == Document(LiteralBlock('literal'))
 
-    assert parse('::\n\n  line') == Document(LiteralBlock('line'))
+    assert parse('::\n\n  literal') == Document(LiteralBlock('literal'))
+    # [WARN][LiteralBlock] Ends without a blank line
+    assert parse('::\n\n  literal\nline') == Document(LiteralBlock('literal'), Paragraph('line'))
+    assert parse('::\n\n  literal\n\nline') == Document(LiteralBlock('literal'), Paragraph('line'))
 
-def test_literal_block_suffix_colons():
+    # in Docutils, below warns literal block expected
+    # [WARN][LiteralBlock] EOF right after `::`
+    assert parse('::') == Document(LiteralBlock())
+    # [WARN][LiteralBlock] None found
+    assert parse('::\n\n\n') == Document(LiteralBlock())
+    # [WARN][LiteralBlock] None found
+    assert parse('::\n\n\nline') == Document(LiteralBlock(), Paragraph('line'))
+
+def test_literal_block_eof():
     # in Docutils, below warns literal block expected
     assert parse('line::') == Document(Paragraph('line:'), LiteralBlock())
     assert parse('line::\n') == Document(Paragraph('line:'), LiteralBlock())
