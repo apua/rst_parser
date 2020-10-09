@@ -12,7 +12,7 @@ class Node:
             [3]
     """
     def __init__(self, *nodes, **attrs):
-        self.nodes = list(nodes)
+        self.nodes = nodes
         self.attrs = attrs
 
     def __str__(self):
