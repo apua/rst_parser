@@ -60,7 +60,7 @@ class LiteralBlock(Node):
         assert colons == '::'
 
         if not text:
-            print('[WARN][LiteralBlock] EOF right after `::`')
+            print('WARN:LiteralBlock:EOF right after `::`')
             return
 
         # lstrip blank lines
@@ -69,7 +69,7 @@ class LiteralBlock(Node):
             blanklines_before = True
             text.pop(0)
         if not blanklines_before:
-            print('[WARN][LiteralBlock] Blank line missing before literal block')
+            print('WARN:LiteralBlock:Blank line missing before literal block')
 
         indented = []
         while text \
@@ -77,7 +77,7 @@ class LiteralBlock(Node):
             indented.append(text.pop(0))
 
         if not indented:
-            print('[WARN][LiteralBlock] None found')
+            print('WARN:LiteralBlock:None found')
             return
 
         # rstrip blank lines
@@ -85,7 +85,7 @@ class LiteralBlock(Node):
             if indented[idx-1] != '':
                 break
         if text and idx == len(indented):
-            print('[WARN][LiteralBlock] Ends without a blank line')
+            print('WARN:LiteralBlock:Ends without a blank line')
         indented = indented[:idx]
 
         assert indented
@@ -98,6 +98,36 @@ class LiteralBlock(Node):
     @classmethod
     def parse(cls, text):
         return cls(*text)
+
+    @staticmethod
+    def patch_paragraph_fetch(fetch):
+        import functools
+        import re
+
+        @functools.wraps(fetch)
+        def fetch_(cls, text):
+            buff = []
+            for line in fetch(cls, text):
+                buff.append(line)
+                if text and text[0] != '' and text[0].startswith(' '):  # next line is indented
+                    break
+
+            if not buff:
+                return
+
+            last = buff.pop()
+            if buff and last == '::':  # 'blah\n::'
+                text.insert(0, '::')
+                yield from buff
+            elif m := re.search(r'^(.*?)(\s*)::$', last):  # 'blah::' or 'blah ::'
+                text.insert(0, '::')
+                yield from buff + [m.group(1) + ('' if m.group(2) else ':')]
+            else:
+                yield from buff + [last]
+
+        return fetch_
+
+Paragraph.fetch = classmethod(LiteralBlock.patch_paragraph_fetch(Paragraph.fetch.__func__))
 
 
 class Document(Node):
@@ -183,3 +213,7 @@ class BufferedText:
     def pop(self, idx):
         self[idx]  # ensure the value exists
         return self._buffer.pop(idx)
+
+    def insert(self, idx, v):
+        self._buffer.insert(idx, v)
+        self._is_empty = False
