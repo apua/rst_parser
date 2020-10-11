@@ -1,7 +1,18 @@
+import logging
 from typing import List
 
 
-class Node:
+logging.basicConfig(format='{levelname}:{name}:{message}', level=logging.DEBUG, style='{')
+
+
+class ClassLogger(type):
+    def __new__(mcls, name, bases, namespace, **kw):
+        cls = super().__new__(mcls, name, bases, namespace, **kw)
+        cls.log = logging.getLogger(name)
+        return cls
+
+
+class Node(metaclass=ClassLogger):
     r"""
     >>> Node(Node(1), Node('2', [3]), a=1)
     <Node {'a': 1}>

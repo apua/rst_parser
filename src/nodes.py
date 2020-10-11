@@ -60,7 +60,7 @@ class LiteralBlock(Node):
         assert colons == '::'
 
         if not text:
-            print('WARN:LiteralBlock:EOF right after `::`')
+            cls.log.warning('EOF right after `::`')
             return
 
         # lstrip blank lines
@@ -69,7 +69,7 @@ class LiteralBlock(Node):
             blanklines_before = True
             text.pop(0)
         if not blanklines_before:
-            print('WARN:LiteralBlock:Blank line missing before literal block')
+            cls.log.warning('Blank line missing before literal block')
 
         indented = []
         while text \
@@ -77,7 +77,7 @@ class LiteralBlock(Node):
             indented.append(text.pop(0))
 
         if not indented:
-            print('WARN:LiteralBlock:None found')
+            cls.log.warning('None found')
             return
 
         # rstrip blank lines
@@ -85,7 +85,7 @@ class LiteralBlock(Node):
             if indented[idx-1] != '':
                 break
         if text and idx == len(indented):
-            print('WARN:LiteralBlock:Ends without a blank line')
+            cls.log.warning('Ends without a blank line')
         indented = indented[:idx]
 
         assert indented
