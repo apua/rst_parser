@@ -112,13 +112,16 @@ class LiteralBlock(Node):
                 if text and text[0] != '' and text[0].startswith(' '):  # next line is indented
                     break
 
-            if not buff:
-                return
+            #if not buff:  # 0 lines, should never happen
+            #    return
 
             last = buff.pop()
-            if buff and last == '::':  # 'blah\n::'
-                text.insert(0, '::')
-                yield from buff
+            if last == '::':
+                if buff:  # 'blah\n::'
+                    text.insert(0, '::')
+                    yield from buff
+                #else:  # '::', should never happen
+                #    return
             elif m := re.search(r'^(.*?)(\s*)::$', last):  # 'blah::' or 'blah ::'
                 text.insert(0, '::')
                 yield from buff + [m.group(1) + ('' if m.group(2) else ':')]
