@@ -28,7 +28,7 @@ class Paragraph(Node):
 
     @classmethod
     def match(cls, text):
-        return True
+        return text and text[0] != ''
 
     @classmethod
     def fetch(cls, text):
