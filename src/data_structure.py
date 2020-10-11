@@ -12,7 +12,7 @@ class Node:
             [3]
     """
     def __init__(self, *nodes, **attrs):
-        self.nodes = nodes
+        self.elems = nodes
         self.attrs = attrs
 
     def __str__(self):
@@ -28,7 +28,7 @@ class Node:
     def reprlines(self) -> List[str]:
         indent = ' ' * 4
         yield self.tag
-        for node in self.nodes:
+        for node in self.elems:
             if isinstance(node, Node):
                 yield from (f'{indent}{line}' for line in node.reprlines())
             else:
@@ -40,4 +40,4 @@ class Node:
     def __eq__(self, n):
         return self.__class__ == n.__class__ \
                 and self.attrs == n.attrs \
-                and self.nodes == n.nodes
+                and self.elems == n.elems
