@@ -165,15 +165,9 @@ class Document(Node):
 
 
 class BufferedLines:
-    r"""
-    Provide `list`-like API for inline manipulation
-
-    -   __bool__
-    -   __getitem__
-    -   clear
-    -   pop
-    """
     def __init__(self, lines):
+        import collections
+        assert isinstance(lines, collections.abc.Iterator)
         self._lines = lines
         self._buffer = []
         self._is_empty = False
@@ -215,6 +209,10 @@ class BufferedLines:
             raise IndexError
         else:
             return self._buffer[idx]
+
+    def __iter__(self):
+        yield from self._buffer
+        yield from self._lines
 
     def clear(self):
         self._buffer.clear()
