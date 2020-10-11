@@ -149,12 +149,14 @@ class Document(Node):
                     break
 
                 node_type = next(node_type for node_type in block_types if node_type.match(text))
-                yield node_type.parse(node_type.fetch(text))
+                fetched = BufferedLines(node_type.fetch(text))
+                if fetched:
+                    yield node_type.parse(fetched)
 
         return cls(*_parse(text))
 
 
-class BufferedText:
+class BufferedLines:
     r"""
     Provide `list`-like API for inline manipulation
 
@@ -163,8 +165,8 @@ class BufferedText:
     -   clear
     -   pop
     """
-    def __init__(self, text):
-        self._lines = map(str.rstrip, text.splitlines())
+    def __init__(self, lines):
+        self._lines = lines
         self._buffer = []
         self._is_empty = False
 
@@ -217,3 +219,9 @@ class BufferedText:
     def insert(self, idx, v):
         self._buffer.insert(idx, v)
         self._is_empty = False
+
+
+class BufferedText(BufferedLines):
+    def __init__(self, text):
+        lines = map(str.rstrip, text.splitlines())
+        super().__init__(lines)

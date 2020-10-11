@@ -42,11 +42,11 @@ def test_literal_block_hang_colons(capsys):
     assert parse('::\n\n  literal\n\nline') == Document(LiteralBlock('literal'), Paragraph('line'))
 
     # in Docutils, below warns literal block expected
-    assert parse('::') == Document(LiteralBlock())
+    assert parse('::') == Document()
     assert cap_print() == "WARN:LiteralBlock:EOF right after `::`\n"
-    assert parse('::\n\n\n') == Document(LiteralBlock())
+    assert parse('::\n\n\n') == Document()
     assert cap_print() == "WARN:LiteralBlock:None found\n"
-    assert parse('::\n\n\nline') == Document(LiteralBlock(), Paragraph('line'))
+    assert parse('::\n\n\nline') == Document(Paragraph('line'))
     assert cap_print() == "WARN:LiteralBlock:None found\n"
 
 def test_literal_block_eof(capsys):
@@ -54,28 +54,28 @@ def test_literal_block_eof(capsys):
 
     # in Docutils, below warns literal block expected
 
-    assert parse('line ::') == Document(Paragraph('line'), LiteralBlock())
-    assert parse('line   ::') == Document(Paragraph('line'), LiteralBlock())
-    assert parse('line\n::') == Document(Paragraph('line'), LiteralBlock())
-    assert parse('line\n\n\n::') == Document(Paragraph('line'), LiteralBlock())
+    assert parse('line ::') == Document(Paragraph('line'))
+    assert parse('line   ::') == Document(Paragraph('line'))
+    assert parse('line\n::') == Document(Paragraph('line'))
+    assert parse('line\n\n\n::') == Document(Paragraph('line'))
     assert cap_print() == "WARN:LiteralBlock:EOF right after `::`\n" * 4
 
-    assert parse('line::') == Document(Paragraph('line:'), LiteralBlock())
-    assert parse('line::\n') == Document(Paragraph('line:'), LiteralBlock())
+    assert parse('line::') == Document(Paragraph('line:'))
+    assert parse('line::\n') == Document(Paragraph('line:'))
     assert cap_print() == "WARN:LiteralBlock:EOF right after `::`\n" * 2
-    assert parse('line::\n\n\n') == Document(Paragraph('line:'), LiteralBlock())
+    assert parse('line::\n\n\n') == Document(Paragraph('line:'))
     assert cap_print() == "WARN:LiteralBlock:None found\n"
 
-    assert parse('line: ::') == Document(Paragraph('line:'), LiteralBlock())
-    assert parse('line: ::\n') == Document(Paragraph('line:'), LiteralBlock())
+    assert parse('line: ::') == Document(Paragraph('line:'))
+    assert parse('line: ::\n') == Document(Paragraph('line:'))
     assert cap_print() == "WARN:LiteralBlock:EOF right after `::`\n" * 2
-    assert parse('line: ::\n\n\n') == Document(Paragraph('line:'), LiteralBlock())
+    assert parse('line: ::\n\n\n') == Document(Paragraph('line:'))
     assert cap_print() == "WARN:LiteralBlock:None found\n"
 
-    assert parse('line:::') == Document(Paragraph('line::'), LiteralBlock())
-    assert parse('line:::\n') == Document(Paragraph('line::'), LiteralBlock())
+    assert parse('line:::') == Document(Paragraph('line::'))
+    assert parse('line:::\n') == Document(Paragraph('line::'))
     assert cap_print() == "WARN:LiteralBlock:EOF right after `::`\n" * 2
-    assert parse('line:::\n\n\n') == Document(Paragraph('line::'), LiteralBlock())
+    assert parse('line:::\n\n\n') == Document(Paragraph('line::'))
     assert cap_print() == "WARN:LiteralBlock:None found\n"
 
 
@@ -85,7 +85,7 @@ def test_literal_block(capsys):
     assert parse('line::\nline') == Document(Paragraph('line::', 'line'))
 
     # in Docutils, it warns literal block expected
-    assert parse('line::\n\nline') == Document(Paragraph('line:'), LiteralBlock(), Paragraph('line'))
+    assert parse('line::\n\nline') == Document(Paragraph('line:'), Paragraph('line'))
     assert cap_print() == "WARN:LiteralBlock:None found\n"
 
     # in Document, it is definition
