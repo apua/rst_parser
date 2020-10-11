@@ -106,27 +106,32 @@ class LiteralBlock(Node):
 
         @functools.wraps(fetch)
         def fetch_(cls, text):
-            buff = []
-            for line in fetch(cls, text):
-                buff.append(line)
-                if text and text[0] != '' and text[0].startswith(' '):  # next line is indented
+            """
+            :precondition:  1.  `Paragraph` matches non-blank line
+                            2.  `LiteralBlock` should match "::" line away
+
+            :additional condition:  should not indent if last line ends with "::"
+            """
+            last = None
+            for lineno, line in enumerate(fetch(cls, text)):
+                if lineno == 0:
+                    last = line  # let's see whether next line or not
+                elif last.endswith('::') and line.startswith(' '):
+                    text.insert(0, line)  # insert the indented line back
                     break
+                else:
+                    yield last  # last is fine
+                    last = line
 
-            #if not buff:  # 0 lines, should never happen
-            #    return
+            assert last is not None  # according to 1st precondition
 
-            last = buff.pop()
             if last == '::':
-                if buff:  # 'blah\n::'
-                    text.insert(0, '::')
-                    yield from buff
-                #else:  # '::', should never happen
-                #    return
+                text.insert(0, '::')
             elif m := re.search(r'^(.*?)(\s*)::$', last):  # 'blah::' or 'blah ::'
                 text.insert(0, '::')
-                yield from buff + [m.group(1) + ('' if m.group(2) else ':')]
+                yield m.group(1) + ('' if m.group(2) else ':')
             else:
-                yield from buff + [last]
+                yield last
 
         return fetch_
 

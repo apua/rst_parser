@@ -78,7 +78,6 @@ def test_literal_block_eof(capsys):
     assert parse('line:::\n\n\n') == Document(Paragraph('line::'))
     assert cap_print() == "WARN:LiteralBlock:None found\n"
 
-
 def test_literal_block(capsys):
     cap_print = lambda: capsys.readouterr().out
 
