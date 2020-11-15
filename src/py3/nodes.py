@@ -139,6 +139,7 @@ Paragraph.fetch = classmethod(LiteralBlock.patch_paragraph_fetch(Paragraph.fetch
 
 
 class Document(Node):
+    # TODO: register them at a package scope settings
     # XXX: require `match`, `fetch`, `parse` methods
     block_types = ['LiteralBlock', 'Paragraph']
 
@@ -146,16 +147,19 @@ class Document(Node):
     def parse(cls, text):
         block_types = tuple(map(globals().__getitem__, cls.block_types))
 
+        # TODO: rename to "remove_blank_beginning"
         def lstrip_empty_lines(text):
             while text and text[0] == '':
                 text.pop(0)
 
+        # TODO: rename to "parse_block"
         def _parse(text):
             while True:
                 lstrip_empty_lines(text)
                 if not text:
                     break
 
+                # TODO: rename to "block_type"
                 node_type = next(node_type for node_type in block_types if node_type.match(text))
                 fetched = BufferedLines(node_type.fetch(text))
                 if fetched:

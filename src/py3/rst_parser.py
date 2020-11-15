@@ -2,6 +2,7 @@ from nodes import *
 
 
 def parse(text):
+    # TODO: rename corresponding from "text" to "lines"
     text = BufferedText(text)
     return Document.parse(text)
 
