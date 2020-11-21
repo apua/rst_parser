@@ -1,4 +1,4 @@
-function to_lines(text) {
+const to_lines = (text) => {
     if (text == '') {
         return [];
     } else if (text.endsWith('\n')) {
@@ -10,44 +10,97 @@ function to_lines(text) {
 
 
 class Node {
-    constructor(elems, attrs={}) {
+    constructor(elems, attrs=new Map()) {
+        this.attrs = attrs;
         this.elems = elems;
-        this.attr = attrs;
     }
 }
 
 
 class Paragraph extends Node {
-    static match = () => true /* (lines.length && lines[0]!='') */;
+    static match() {
+        return true /* (lines.length > 0 && lines[0] != '') */;
+    }
     static fetch(lines) {
         const fetched = [];
-        while (lines.length && lines[0]!='')
+        while (lines.length > 0 && lines[0] != '')
             fetched.push(lines.shift());
         return fetched;
     }
-    static parse(lines) {
-        return new Paragraph(lines);
+    static parse(fetched) {
+        return new Paragraph([...fetched]);
+    }
+}
+
+
+class LiteralBlock extends Node {
+    static match(lines) {
+        if (lines.length > 0 && lines[0] == '::') {
+            if (lines[1] === undefined) {
+                return true;
+            } else {
+                return lines[1] == '' || lines[1].startsWith(' ');
+            }
+        } else {
+            return false;
+        }
+    }
+    static fetch(lines) {
+        const colons = lines.shift();
+        console.assert(colons == '::');
+
+        if (lines.length == 0) {
+            console.warn('EOF right after `::`');
+            return [];
+        }
+
+        let blanklines_before = false;
+        while (lines.length > 0 && lines[0] == '') {
+            blanklines_before = true;
+            lines.shift();
+        }
+        if (!blanklines_before)
+            console.warn('Blank line missing before literal block');
+
+        const indented = [];
+        while (lines.length > 0 && (lines[0].startsWith(' ') || lines[0] == ''))
+            indented.push(lines.shift());
+
+        if (indented.length == 0) {
+            console.warn('None found');
+            return [];
+        }
+
+        /* ... */
+
+        const fetched = [...lines];
+        lines.length = 0;
+        return fetched;
+    }
+    static parse(fetched) {
+        return new LiteralBlock([...fetched]);
+    }
+    static patch_paragraph_fetch(fetch) {
     }
 }
 
 
 class Document extends Node {
-    static block_types = [Paragraph];
-    static remove_blank_beginning(lines) {
-        while (lines.length && lines[0]=='')
-            lines.shift();
-    }
+    static block_types = [LiteralBlock, Paragraph];
     static parse(lines) {
         const elems = [];
         let block_type, fetched;
         while (true) {
-            Document.remove_blank_beginning(lines);
-            if (!lines.length)
+            //remove_blank_beginning
+            while (lines.length && lines[0]=='')
+                lines.shift();
+
+            if (lines.length == 0)
                 break;
 
             block_type = Document.block_types.find(B => B.match(lines));
             fetched = block_type.fetch(lines);
-            if (fetched.length)
+            if (fetched.length > 0)
                 elems.push(block_type.parse(fetched));
         }
         return new Document(elems);
@@ -55,11 +108,29 @@ class Document extends Node {
 }
 
 
-function parse(text) {
-    let lines = to_lines(text);
-    return Document.parse(lines);
-}
+const parse = text => Document.parse(to_lines(text));
 
+
+beforeAll(() => {
+    globalThis.assert = {
+        parse(a, b) {
+            expect(parse(a)).toEqual(b);
+        },
+        lastlogmsg(msg) {
+            expect(console.warn).toHaveBeenCalledWith(msg);
+            console.warn.mockClear();
+        },
+    }
+});
+afterAll(() => {
+    delete globalThis.assert;
+});
+beforeEach(() => {
+    console.warn=jest.fn();
+});
+afterEach(() => {
+    jest.restoreAllMocks();
+});
 
 test('split and strip to lines', () => {
     expect(to_lines('')).toEqual([]);
@@ -72,47 +143,45 @@ test('split and strip to lines', () => {
 });
 
 test('empty document', () => {
-    expect(parse('')).toEqual(new Document([]));
-    expect(parse('\n')).toEqual(new Document([]));
-    expect(parse('\n'.repeat(3))).toEqual(new Document([]));
+    assert.parse('',new Document([]));
+    assert.parse('\n',new Document([]));
+    assert.parse('\n'.repeat(3),new Document([]));
 });
 
 test('paragraph startswith', () => {
-    expect(parse('line')).toEqual(
-        new Document([
-            new Paragraph(['line']),
-        ])
-    );
-    expect(parse('\nline')).toEqual(
-        new Document([
-            new Paragraph(['line']),
-        ])
-    );
-    expect(parse('\n'.repeat(3) + '\nline')).toEqual(
-        new Document([
-            new Paragraph(['line']),
-        ])
-    );
+    assert.parse('line',new Document([new Paragraph(['line'])]));
+    assert.parse('\nline',new Document([new Paragraph(['line'])]));
+    assert.parse('\n'.repeat(3) + '\nline',new Document([new Paragraph(['line'])]));
 });
 
 test('paragraph endswith', () => {
-    expect(parse('line')).toEqual(
-        new Document([
-            new Paragraph(['line']),
-        ])
-    );
-    expect(parse('line\n' + '\n'.repeat(3))).toEqual(
-        new Document([
-            new Paragraph(['line']),
-        ])
-    );
+    assert.parse('line',new Document([new Paragraph(['line'])]));
+    assert.parse('line\n' + '\n'.repeat(3),new Document([new Paragraph(['line'])]));
 });
 
 test('multi paragraph', () => {
-    expect(parse('word 1 word 2\nline 2\n\n\nline 3\n')).toEqual(
-        new Document([
-            new Paragraph(['word 1 word 2', 'line 2']),
-            new Paragraph(['line 3']),
-        ])
+    assert.parse('word 1 word 2\nline 2\n\n\nline 3\n',
+        new Document([new Paragraph(['word 1 word 2', 'line 2']), new Paragraph(['line 3'])])
     );
 });
+
+test('literal block hang colons', () => {
+    assert.parse('::line',new Document([new Paragraph(['::line'])]));
+    assert.parse('::    line',new Document([new Paragraph(['::    line'])]));
+    assert.parse('::\nline',new Document([new Paragraph(['::', 'line'])]));
+
+    assert.parse('::\n  literal',new Document([new LiteralBlock(['literal'])]));
+    assert.lastlogmsg('Blank line missing before literal block');
+
+    assert.parse('::\n\n  literal',new Document([new LiteralBlock(['literal'])]));
+    assert.parse('::\n\n  literal\nline',new Document([new LiteralBlock(['literal']), new Paragraph(['line'])]));
+    assert.lastlogmsg('Ends without a blank line');
+    assert.parse('::\n\n  literal\n\nline',new Document([new LiteralBlock(['literal']), new Paragraph(['line'])]));
+
+    assert.parse('::', new Document([]));
+    assert.lastlogmsg('EOF right after `::`');
+    assert.parse('::\n\n\n', new Document([]));
+    assert.lastlogmsg('None found');
+    assert.parse('::\n\n\nline', new Document([new Paragraph(['line'])]));
+    assert.lastlogmsg('None found');
+})
