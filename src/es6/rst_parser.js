@@ -136,6 +136,9 @@ const parse = text => Document.parse(to_lines(text));
 
 beforeAll(() => {
     globalThis.assert = {
+        to_lines(a, b) {
+            expect(to_lines(a)).toEqual(b);
+        },
         parse(a, b) {
             expect(parse(a)).toEqual(b);
         },
@@ -162,13 +165,13 @@ test('base class `Node`', () => {
 });
 
 test('split and strip to lines', () => {
-    expect(to_lines('')).toEqual([]);
-    expect(to_lines(' ')).toEqual(['']);
-    expect(to_lines('1')).toEqual(['1']);
-    expect(to_lines('\n')).toEqual(['']);
-    expect(to_lines('1\n')).toEqual(['1']);
-    expect(to_lines('1 \n')).toEqual(['1']);
-    expect(to_lines('1\n\n')).toEqual(['1', '']);
+    assert.to_lines('', []);
+    assert.to_lines(' ', ['']);
+    assert.to_lines('1', ['1']);
+    assert.to_lines('\n', ['']);
+    assert.to_lines('1\n', ['1']);
+    assert.to_lines('1 \n', ['1']);
+    assert.to_lines('1\n\n', ['1', '']);
 });
 
 test('empty document', () => {
