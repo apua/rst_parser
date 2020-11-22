@@ -1,18 +1,32 @@
 const to_lines = (text) => {
-    if (text == '') {
+    if (text === '') {
         return [];
     } else if (text.endsWith('\n')) {
-        return text.split('\n').slice(0, -1).map(line=>line.trimEnd());
+        return text.split('\n').slice(0, -1).map(line => line.trimEnd());
     } else {
-        return text.split('\n').map(line=>line.trimEnd());
+        return text.split('\n').map(line => line.trimEnd());
     }
 }
 
 
 class Node {
-    constructor(elems, attrs=new Map()) {
-        this.attrs = attrs;
-        this.elems = elems;
+    constructor(...rest) {
+        if (rest.length > 0 && rest[0] instanceof Map)
+            this.attrs = rest.shift();
+        else
+            this.attrs = new Map();
+
+        if (rest.length > 0) {
+            if (rest[0] instanceof Array) {
+                this.elems = rest.shift();
+                console.assert(rest.length === 0);
+            } else {
+                this.elems = rest;
+                console.assert(rest.every(elem => elem instanceof Node || typeof elem === 'string'));
+            }
+        } else {
+            this.elems = [];
+        }
     }
 }
 
@@ -35,11 +49,11 @@ class Paragraph extends Node {
 
 class LiteralBlock extends Node {
     static match(lines) {
-        if (lines.length > 0 && lines[0] == '::') {
+        if (lines.length > 0 && lines[0] === '::') {
             if (lines[1] === undefined) {
                 return true;
             } else {
-                return lines[1] == '' || lines[1].startsWith(' ');
+                return lines[1] === '' || lines[1].startsWith(' ');
             }
         } else {
             return false;
@@ -47,15 +61,15 @@ class LiteralBlock extends Node {
     }
     static fetch(lines) {
         const colons = lines.shift();
-        console.assert(colons == '::');
+        console.assert(colons === '::');
 
-        if (lines.length == 0) {
+        if (lines.length === 0) {
             console.warn('EOF right after `::`');
             return [];
         }
 
         let blanklines_before = false;
-        while (lines.length > 0 && lines[0] == '') {
+        while (lines.length > 0 && lines[0] === '') {
             blanklines_before = true;
             lines.shift();
         }
@@ -64,10 +78,10 @@ class LiteralBlock extends Node {
 
         const indented = [];
 
-        while (lines.length > 0 && (lines[0].startsWith(' ') || lines[0] == ''))
+        while (lines.length > 0 && (lines[0].startsWith(' ') || lines[0] === ''))
             indented.push(lines.shift());
 
-        if (indented.length == 0) {
+        if (indented.length === 0) {
             console.warn('None found');
             return [];
         }
@@ -75,7 +89,7 @@ class LiteralBlock extends Node {
         if (lines.length > 0 && indented[indented.length-1] != '')
             console.warn('Ends without a blank line');
 
-        while (indented.length > 0 && indented[indented.length-1] == '')
+        while (indented.length > 0 && indented[indented.length-1] === '')
             indented.pop();
 
         console.assert(indented.length > 0);
@@ -101,10 +115,10 @@ class Document extends Node {
         let block_type, fetched;
         while (true) {
             //remove_blank_beginning
-            while (lines.length && lines[0]=='')
+            while (lines.length > 0 && lines[0] === '')
                 lines.shift();
 
-            if (lines.length == 0)
+            if (lines.length === 0)
                 break;
 
             block_type = Document.block_types.find(B => B.match(lines));
@@ -139,6 +153,12 @@ beforeEach(() => {
 });
 afterEach(() => {
     jest.restoreAllMocks();
+});
+
+test('base class `Node`', () => {
+    new Document();
+    new Document(['1', '2', new Paragraph('3', '4')]);
+    new Document(new Map(Object.entries({'a': 1})), '1', '2', new Paragraph('3', '4'));
 });
 
 test('split and strip to lines', () => {
