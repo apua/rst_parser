@@ -80,13 +80,12 @@ class LiteralBlock(Node):
             cls.log.warning('None found')
             return
 
-        # rstrip blank lines
-        for idx in range(len(indented), 0, -1):
-            if indented[idx-1] != '':
-                break
-        if text and idx == len(indented):
+        if text and indented[-1] != '':
             cls.log.warning('Ends without a blank line')
-        indented = indented[:idx]
+
+        # remove tailing blank lines
+        while indented and indented[-1] == '':
+            indented.pop()
 
         assert indented
 
