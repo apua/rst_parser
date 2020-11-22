@@ -175,45 +175,45 @@ test('split and strip to lines', () => {
 });
 
 test('empty document', () => {
-    assert.parse('',new Document([]));
-    assert.parse('\n',new Document([]));
-    assert.parse('\n'.repeat(3),new Document([]));
+    assert.parse('',new Document());
+    assert.parse('\n',new Document());
+    assert.parse('\n'.repeat(3),new Document());
 });
 
 test('paragraph startswith', () => {
-    assert.parse('line',new Document([new Paragraph(['line'])]));
-    assert.parse('\nline',new Document([new Paragraph(['line'])]));
-    assert.parse('\n'.repeat(3) + '\nline',new Document([new Paragraph(['line'])]));
+    assert.parse('line',new Document(new Paragraph('line')));
+    assert.parse('\nline',new Document(new Paragraph('line')));
+    assert.parse('\n'.repeat(3) + '\nline',new Document(new Paragraph('line')));
 });
 
 test('paragraph endswith', () => {
-    assert.parse('line',new Document([new Paragraph(['line'])]));
-    assert.parse('line\n' + '\n'.repeat(3),new Document([new Paragraph(['line'])]));
+    assert.parse('line',new Document(new Paragraph('line')));
+    assert.parse('line\n' + '\n'.repeat(3),new Document(new Paragraph('line')));
 });
 
 test('multi paragraph', () => {
     assert.parse('word 1 word 2\nline 2\n\n\nline 3\n',
-        new Document([new Paragraph(['word 1 word 2', 'line 2']), new Paragraph(['line 3'])])
+        new Document(new Paragraph('word 1 word 2', 'line 2'), new Paragraph('line 3'))
     );
 });
 
 test('literal block hang colons', () => {
-    assert.parse('::line',new Document([new Paragraph(['::line'])]));
-    assert.parse('::    line',new Document([new Paragraph(['::    line'])]));
-    assert.parse('::\nline',new Document([new Paragraph(['::', 'line'])]));
+    assert.parse('::line',new Document(new Paragraph('::line')));
+    assert.parse('::    line',new Document(new Paragraph('::    line')));
+    assert.parse('::\nline',new Document(new Paragraph('::', 'line')));
 
-    assert.parse('::\n  literal',new Document([new LiteralBlock(['literal'])]));
+    assert.parse('::\n  literal',new Document(new LiteralBlock('literal')));
     assert.lastlogmsg('Blank line missing before literal block');
 
-    assert.parse('::\n\n  literal',new Document([new LiteralBlock(['literal'])]));
-    assert.parse('::\n\n  literal\nline',new Document([new LiteralBlock(['literal']), new Paragraph(['line'])]));
+    assert.parse('::\n\n  literal',new Document(new LiteralBlock('literal')));
+    assert.parse('::\n\n  literal\nline',new Document(new LiteralBlock('literal'), new Paragraph('line')));
     assert.lastlogmsg('Ends without a blank line');
-    assert.parse('::\n\n  literal\n\nline',new Document([new LiteralBlock(['literal']), new Paragraph(['line'])]));
+    assert.parse('::\n\n  literal\n\nline',new Document(new LiteralBlock('literal'), new Paragraph('line')));
 
-    assert.parse('::', new Document([]));
+    assert.parse('::', new Document());
     assert.lastlogmsg('EOF right after `::`');
-    assert.parse('::\n\n\n', new Document([]));
+    assert.parse('::\n\n\n', new Document());
     assert.lastlogmsg('None found');
-    assert.parse('::\n\n\nline', new Document([new Paragraph(['line'])]));
+    assert.parse('::\n\n\nline', new Document(new Paragraph('line')));
     assert.lastlogmsg('None found');
-})
+});
