@@ -63,6 +63,7 @@ class LiteralBlock extends Node {
             console.warn('Blank line missing before literal block');
 
         const indented = [];
+
         while (lines.length > 0 && (lines[0].startsWith(' ') || lines[0] == ''))
             indented.push(lines.shift());
 
@@ -71,11 +72,19 @@ class LiteralBlock extends Node {
             return [];
         }
 
-        /* ... */
+        if (lines.length > 0 && indented[indented.length-1] != '')
+            console.warn('Ends without a blank line');
 
-        const fetched = [...lines];
-        lines.length = 0;
-        return fetched;
+        while (indented.length > 0 && indented[indented.length-1] == '')
+            indented.pop();
+
+        console.assert(indented.length > 0);
+
+        const
+            nonempty = indented.filter(v => v != ''),
+            len_leading_space = s => s.length - s.trimStart().length,
+            len_indent = Math.min(...nonempty.map(len_leading_space));
+        return indented.map(s => (s != '' ? s.slice(len_indent) : ''));
     }
     static parse(fetched) {
         return new LiteralBlock([...fetched]);
