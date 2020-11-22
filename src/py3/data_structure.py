@@ -14,31 +14,51 @@ class ClassLogger(type):
 
 class Node(metaclass=ClassLogger):
     r"""
-    >>> Node(Node(1), Node('2', [3]), a=1)
+    >>> Node()
+    <Node>
+    >>> Node(['1', '2'])
+    <Node>
+        '1'
+        '2'
+    >>> Node('1', '2')  # for convenience
+    <Node>
+        '1'
+        '2'
+    >>> Node({'a': 1}, Node('1'), Node({'b': 2}, ['3']))
     <Node {'a': 1}>
         <Node>
-            1
-        <Node>
-            '2'
-            [3]
+            '1'
+        <Node {'b': 2}>
+            '3'
     """
-    def __init__(self, *elems, **attrs):
-        self.elems = elems
-        self.attrs = attrs
-
-    def __str__(self):
-        return repr(self)
-
-    @property
-    def tag(self) -> str:
-        if self.attrs:
-            return f'<{self.__class__.__name__} {self.attrs}>'
+    def __init__(self, *args):
+        rest = list(args)
+        if rest and isinstance(rest[0], dict):
+            self.attrs = rest.pop(0)
         else:
-            return f'<{self.__class__.__name__}>'
+            self.attrs = {}
 
-    def reprlines(self) -> List[str]:
+        if rest:
+            if isinstance(rest[0], list):
+                self.elems = rest.pop(0)
+                assert len(rest) == 0
+            else:
+                self.elems = rest
+                assert all(isinstance(elem, (Node, str)) for elem in self.elems)
+        else:
+            self.elems = []
+
+    def __eq__(self, node):
+        return all(getattr(self, key) == getattr(node, key) for key in ('__class__', 'attrs', 'elems'))
+
+    def reprlines(self):
+        if self.attrs:
+            tag = f'<{self.__class__.__name__} {self.attrs}>'
+        else:
+            tag = f'<{self.__class__.__name__}>'
+        yield tag
+
         indent = ' ' * 4
-        yield self.tag
         for node in self.elems:
             if isinstance(node, Node):
                 yield from (f'{indent}{line}' for line in node.reprlines())
@@ -48,10 +68,8 @@ class Node(metaclass=ClassLogger):
     def __repr__(self):
         return '\n'.join(self.reprlines())
 
-    def __eq__(self, n):
-        return self.__class__ == n.__class__ \
-                and self.attrs == n.attrs \
-                and self.elems == n.elems
+    def __str__(self):
+        return repr(self)
 
 
 class BufferedLines:
