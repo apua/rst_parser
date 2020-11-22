@@ -72,8 +72,8 @@ class LiteralBlock(Node):
             cls.log.warning('Blank line missing before literal block')
 
         indented = []
-        while text \
-                and (text[0].startswith(' ') or text[0] == ''):  # XXX: assume space only
+
+        while text and (text[0].startswith(' ') or text[0] == ''):  # XXX: assume space only
             indented.append(text.pop(0))
 
         if not indented:
