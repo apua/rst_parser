@@ -89,9 +89,9 @@ class LiteralBlock(Node):
 
         assert indented
 
-        non_empty = filter(None, indented)
+        nonempty = filter(None, indented)
         len_leading_space = lambda s: len(s) - len(s.lstrip())
-        len_indent = min(map(len_leading_space, non_empty))
+        len_indent = min(map(len_leading_space, nonempty))
         yield from (s[len_indent:] if s else '' for s in indented)
 
     @classmethod
