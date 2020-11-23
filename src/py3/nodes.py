@@ -27,25 +27,25 @@ class Paragraph(Node):
     inline_types = []
 
     @classmethod
-    def match(cls, text):
-        return text and text[0] != ''
+    def match(cls, lines):
+        return lines and lines[0] != ''
 
     @classmethod
-    def fetch(cls, text):
-        while text and text[0] != '':
-            yield text.pop(0)
+    def fetch(cls, lines):
+        while lines and lines[0] != '':
+            yield lines.pop(0)
 
     @classmethod
-    def parse(cls, text):
-        return cls(*text)
+    def parse(cls, lines):
+        return cls(*lines)
 
 
 class LiteralBlock(Node):
     @classmethod
-    def match(cls, text):
-        if text and text[0] == '::':
+    def match(cls, lines):
+        if lines and lines[0] == '::':
             try:
-                line = text[1]
+                line = lines[1]
             except IndexError:
                 return True
             else:
@@ -54,33 +54,33 @@ class LiteralBlock(Node):
             return False
 
     @classmethod
-    def fetch(cls, text):
+    def fetch(cls, lines):
         # remove colons
-        colons = text.pop(0)
+        colons = lines.pop(0)
         assert colons == '::'
 
-        if not text:
+        if not lines:
             cls.log.warning('EOF right after `::`')
             return
 
-        # lstrip blank lines
+        # remove leading blank lines
         blanklines_before = False
-        while text and text[0] == '':
+        while lines and lines[0] == '':
             blanklines_before = True
-            text.pop(0)
+            lines.pop(0)
         if not blanklines_before:
             cls.log.warning('Blank line missing before literal block')
 
         indented = []
 
-        while text and (text[0].startswith(' ') or text[0] == ''):  # XXX: assume space only
-            indented.append(text.pop(0))
+        while lines and (lines[0].startswith(' ') or lines[0] == ''):  # XXX: assume space only
+            indented.append(lines.pop(0))
 
         if not indented:
             cls.log.warning('None found')
             return
 
-        if text and indented[-1] != '':
+        if lines and indented[-1] != '':
             cls.log.warning('Ends without a blank line')
 
         # remove tailing blank lines
@@ -95,8 +95,8 @@ class LiteralBlock(Node):
         yield from (s[len_indent:] if s else '' for s in indented)
 
     @classmethod
-    def parse(cls, text):
-        return cls(*text)
+    def parse(cls, lines):
+        return cls(*lines)
 
     @staticmethod
     def patch_paragraph_fetch(fetch):
@@ -104,7 +104,7 @@ class LiteralBlock(Node):
         import re
 
         @functools.wraps(fetch)
-        def fetch_(cls, text):
+        def fetch_(cls, lines):
             """
             :precondition:  1.  `Paragraph` matches non-blank line
                             2.  `LiteralBlock` should match "::" line away
@@ -112,11 +112,11 @@ class LiteralBlock(Node):
             :additional condition:  should not indent if last line ends with "::"
             """
             last = None
-            for lineno, line in enumerate(fetch(cls, text)):
+            for lineno, line in enumerate(fetch(cls, lines)):
                 if lineno == 0:
                     last = line  # let's see whether next line or not
                 elif last.endswith('::') and line.startswith(' '):
-                    text.insert(0, line)  # insert the indented line back
+                    lines.insert(0, line)  # insert the indented line back
                     break
                 else:
                     yield last  # last is fine
@@ -125,9 +125,9 @@ class LiteralBlock(Node):
             assert last is not None  # according to 1st precondition
 
             if last == '::':
-                text.insert(0, '::')
+                lines.insert(0, '::')
             elif m := re.search(r'^(.*?)(\s*)::$', last):  # 'blah::' or 'blah ::'
-                text.insert(0, '::')
+                lines.insert(0, '::')
                 yield m.group(1) + ('' if m.group(2) else ':')
             else:
                 yield last
@@ -143,28 +143,25 @@ class Document(Node):
     block_types = ['LiteralBlock', 'Paragraph']
 
     @classmethod
-    def parse(cls, text):
+    def parse(cls, lines):
         block_types = tuple(map(globals().__getitem__, cls.block_types))
 
-        # TODO: rename to "remove_blank_beginning"
-        def lstrip_empty_lines(text):
-            while text and text[0] == '':
-                text.pop(0)
+        def remove_leading_blanks(lines):
+            while lines and lines[0] == '':
+                lines.pop(0)
 
-        # TODO: rename to "parse_block"
-        def _parse(text):
+        def parse_block(lines):
             while True:
-                lstrip_empty_lines(text)
-                if not text:
+                remove_leading_blanks(lines)
+                if not lines:
                     break
 
-                # TODO: rename to "block_type"
-                node_type = next(node_type for node_type in block_types if node_type.match(text))
-                fetched = BufferedLines(node_type.fetch(text))
+                block_type = next(bt for bt in block_types if bt.match(lines))
+                fetched = BufferedLines(block_type.fetch(lines))
                 if fetched:
-                    yield node_type.parse(fetched)
+                    yield block_type.parse(fetched)
 
-        return cls(*_parse(text))
+        return cls(*parse_block(lines))
 
 
 class BufferedText(BufferedLines):
