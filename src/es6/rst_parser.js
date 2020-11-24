@@ -1,5 +1,5 @@
 const to_lines = (text) => {
-    if (text === '') {
+    if (text == '') {
         return [];
     } else if (text.endsWith('\n')) {
         return text.split('\n').slice(0, -1).map(line => line.trimEnd());
@@ -19,10 +19,10 @@ class Node {
         if (rest.length > 0) {
             if (rest[0] instanceof Array) {
                 this.elems = rest.shift();
-                console.assert(rest.length === 0);
+                console.assert(rest.length == 0);
             } else {
                 this.elems = rest;
-                console.assert(rest.every(elem => elem instanceof Node || typeof elem === 'string'));
+                console.assert(rest.every(elem => elem instanceof Node || typeof elem == 'string'));
             }
         } else {
             this.elems = [];
@@ -42,18 +42,18 @@ class Paragraph extends Node {
         return fetched;
     }
     static parse(fetched) {
-        return new Paragraph([...fetched]);
+        return new Paragraph(fetched);
     }
 }
 
 
 class LiteralBlock extends Node {
     static match(lines) {
-        if (lines.length > 0 && lines[0] === '::') {
+        if (lines.length > 0 && lines[0] == '::') {
             if (lines[1] === undefined) {
                 return true;
             } else {
-                return lines[1] === '' || lines[1].startsWith(' ');
+                return lines[1] == '' || lines[1].startsWith(' ');
             }
         } else {
             return false;
@@ -61,15 +61,15 @@ class LiteralBlock extends Node {
     }
     static fetch(lines) {
         const colons = lines.shift();
-        console.assert(colons === '::');
+        console.assert(colons == '::');
 
-        if (lines.length === 0) {
+        if (lines.length == 0) {
             console.warn('EOF right after `::`');
             return [];
         }
 
         let blanklines_before = false;
-        while (lines.length > 0 && lines[0] === '') {
+        while (lines.length > 0 && lines[0] == '') {
             blanklines_before = true;
             lines.shift();
         }
@@ -78,10 +78,10 @@ class LiteralBlock extends Node {
 
         const indented = [];
 
-        while (lines.length > 0 && (lines[0].startsWith(' ') || lines[0] === ''))
+        while (lines.length > 0 && (lines[0].startsWith(' ') || lines[0] == ''))
             indented.push(lines.shift());
 
-        if (indented.length === 0) {
+        if (indented.length == 0) {
             console.warn('None found');
             return [];
         }
@@ -89,7 +89,7 @@ class LiteralBlock extends Node {
         if (lines.length > 0 && indented[indented.length-1] != '')
             console.warn('Ends without a blank line');
 
-        while (indented.length > 0 && indented[indented.length-1] === '')
+        while (indented.length > 0 && indented[indented.length-1] == '')
             indented.pop();
 
         console.assert(indented.length > 0);
@@ -101,11 +101,18 @@ class LiteralBlock extends Node {
         return indented.map(s => (s != '' ? s.slice(len_indent) : ''));
     }
     static parse(fetched) {
-        return new LiteralBlock([...fetched]);
+        return new LiteralBlock(fetched);
     }
     static patch_paragraph_fetch(fetch) {
+        const fetch_ = lines => {
+            /* TBC */
+            return fetch(lines);
+        };
+        return fetch_
     }
 }
+
+Paragraph.fetch = LiteralBlock.patch_paragraph_fetch(Paragraph.fetch);
 
 
 class Document extends Node {
@@ -115,16 +122,16 @@ class Document extends Node {
         let block_type, fetched;
         while (true) {
             //remove_blank_beginning
-            while (lines.length > 0 && lines[0] === '')
+            while (lines.length > 0 && lines[0] == '')
                 lines.shift();
 
-            if (lines.length === 0)
+            if (lines.length == 0)
                 break;
 
             block_type = Document.block_types.find(B => B.match(lines));
-            fetched = block_type.fetch(lines);
-            if (fetched.length > 0)
-                elems.push(block_type.parse(fetched));
+            block_lines = block_type.fetch(lines);
+            if (block_lines.length > 0)
+                elems.push(block_type.parse(block_lines));
         }
         return new Document(elems);
     }
@@ -216,4 +223,52 @@ test('literal block hang colons', () => {
     assert.lastlogmsg('None found');
     assert.parse('::\n\n\nline', new Document(new Paragraph('line')));
     assert.lastlogmsg('None found');
+});
+
+test('literal block eof', () => {
+    assert.parse('line ::', new Document(new Paragraph('line')));
+    assert.lastlogmsg('EOF right after `::`');
+    assert.parse('line   ::', new Document(new Paragraph('line')));
+    assert.lastlogmsg('EOF right after `::`');
+    assert.parse('line\n::', new Document(new Paragraph('line')));
+    assert.lastlogmsg('EOF right after `::`');
+    assert.parse('line\n\n\n::', new Document(new Paragraph('line')));
+    assert.lastlogmsg('EOF right after `::`');
+
+    assert.parse('line::', new Document(new Paragraph('line:')));
+    assert.lastlogmsg('EOF right after `::`');
+    assert.parse('line::\n', new Document(new Paragraph('line:')));
+    assert.lastlogmsg('EOF right after `::`');
+    assert.parse('line::\n\n\n', new Document(new Paragraph('line:')));
+    assert.lastlogmsg('None found');
+
+    assert.parse('line: ::', new Document(new Paragraph('line:')));
+    assert.lastlogmsg('EOF right after `::`');
+    assert.parse('line: ::\n', new Document(new Paragraph('line:')));
+    assert.lastlogmsg('EOF right after `::`');
+    assert.parse('line: ::\n\n\n', new Document(new Paragraph('line:')));
+    assert.lastlogmsg('None found');
+
+    assert.parse('line:::', new Document(new Paragraph('line::')));
+    assert.lastlogmsg('EOF right after `::`');
+    assert.parse('line:::\n', new Document(new Paragraph('line::')));
+    assert.lastlogmsg('EOF right after `::`');
+    assert.parse('line:::\n\n\n', new Document(new Paragraph('line::')));
+    assert.lastlogmsg('None found');
+});
+
+test('literal block', () => {
+    assert.parse('line::\nline', new Document(new Paragraph('line::', 'line')));
+
+    assert.parse('line::\n\nline', new Document(new Paragraph('line:'), new Paragraph('line')));
+    assert.lastlogmsg('None found');
+
+    assert.parse('line::\n literal', new Document(new Paragraph('line:'), new LiteralBlock('literal')));
+    assert.lastlogmsg('Blank line missing before literal block');
+
+    assert.parse('line::\n\n literal', new Document(new Paragraph('line:'), new LiteralBlock('literal')));
+    assert.parse('line::\n\n\n literal', new Document(new Paragraph('line:'), new LiteralBlock('literal')));
+
+    assert.parse('line::\n\n literal\n literal\n\nline',
+        new Document(new Paragraph('line:'), new LiteralBlock('literal', 'literal'), new Paragraph('line')));
 });
