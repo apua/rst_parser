@@ -10,14 +10,17 @@ class Node:
     elems: list = field(default_factory=list)
 
 
-# Definitions
+# Base Parser
 # ===========
 
 class NodeLogger: pass
 
 class NodeRepresentation: pass
 
-class GenericFuncCall: pass
+class GenericFuncCall:
+    def __call__(self, *a, **kw):
+        return Node(self.name, *a, **kw)
+
 
 from dataclasses import dataclass
 
@@ -29,16 +32,33 @@ class Configurable:
     def __post_init__(self):
         assert any([self.blocks, self.inlines])
 
+
 class NodeParser(Configurable, NodeLogger, NodeRepresentation, GenericFuncCall):
     @property
     def name(self):
         return self.__class__.__name__.lower()
 
-    def __call__(self, attrs=None, elems=None):
-        return Node(self.name)
+
+# Parser Definitions
+# ==================
 
 class Document(NodeParser):
-    pass
+    def remove_leading_blanks(self, lines):
+        while lines:
+            if lines[0] == '':
+                del lines[0]
+
+    def parse(self, text):
+        node = Node(self.name)
+        lines = list(map(str.rstrip, text.splitlines()))
+
+        while True:
+            self.remove_leading_blanks(lines)
+            if not lines:
+                break
+
+        return node
+
 
 class Paragraph(NodeParser):
     pass
