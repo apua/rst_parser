@@ -25,15 +25,12 @@ class GenericFuncCall:
 from dataclasses import dataclass
 
 @dataclass
-class Configurable:
+class Configure:
     blocks: list = None
     inlines: list = None
 
-    def __post_init__(self):
-        assert any([self.blocks, self.inlines])
 
-
-class NodeParser(Configurable, NodeLogger, NodeRepresentation, GenericFuncCall):
+class NodeParser(Configure, NodeLogger, NodeRepresentation, GenericFuncCall):
     @property
     def name(self):
         return self.__class__.__name__.lower()
@@ -68,7 +65,7 @@ class Paragraph(NodeParser):
 # =============
 
 paragraph = Paragraph()
-document = Document()
+document = Document(blocks=[paragraph])
 
 
 # Export
