@@ -10,74 +10,66 @@ class Node:
     elems: list = field(default_factory=list)
 
 
-# Base Parser
-# ===========
-
-class NodeLogger: pass
-
-class NodeRepresentation: pass
-
-class GenericFuncCall:
-    def __call__(self, *a, **kw):
-        return Node(self.name, *a, **kw)
+def node(name):
+    return lambda *elems: Node(name, elems=list(elems))
 
 
-from dataclasses import dataclass
-
-@dataclass
-class Configure:
-    blocks: list = None
-    inlines: list = None
-
-
-class NodeParser(Configure, NodeLogger, NodeRepresentation, GenericFuncCall):
-    @property
-    def name(self):
-        return self.__class__.__name__.lower()
+class Nodes:
+    """
+    >>> Nodes.document()
+    Node(name='document', attrs={}, elems=[])
+    >>> Nodes.document('a', 'b', 'c')
+    Node(name='document', attrs={}, elems=['a', 'b', 'c'])
+    """
+    document = node('document')
+    paragraph = node('paragraph')
+    literal_block = node('literal_block')
 
 
 # Parser Definitions
 # ==================
 
-class Document(NodeParser):
-    def remove_leading_blanks(self, lines):
-        while lines:
-            if lines[0] == '':
-                del lines[0]
-
-    def parse(self, text):
-        node = Node(self.name)
+class Parser:
+    def parse(text):
         lines = list(map(str.rstrip, text.splitlines()))
+        return Parser.document(lines, block_parsers=[Parser.blank, Parser.paragraph])
 
-        while True:
-            self.remove_leading_blanks(lines)
-            if not lines:
+    def document(lines, block_parsers):
+        document = Nodes.document()
+        
+        while lines:
+            if __debug__: _number_lines = len(lines)
+            for parser in block_parsers:
+                if parser(lines, document):
+                    break
+            assert _number_lines > len(lines), (_number_lines, lines)
+
+        return document
+
+    def blank(lines, _):
+        i = 0
+        for line in lines:
+            if line == '':
+                i += 1
+            else:
+                break
+        if i > 0:
+            del lines[:i]
+            return True
+        else:
+            return False
+
+    def paragraph(lines, parent):
+        i = 0
+        for line in lines:
+            if line:
+                i += 1
+            else:
                 break
 
-        return node
-
-
-class Paragraph(NodeParser):
-    pass
-
-
-# Configuration
-# =============
-
-paragraph = Paragraph()
-document = Document(blocks=[paragraph])
-
-
-# Export
-# ======
-
-def parse(text) -> Node:
-    return document.parse(text)
-
-
-__all__ = [
-    'Node',
-    'parse',
-    'document',
-    'paragraph',
-    ]
+        if i > 0:
+            parent.elems.append(Node('paragraph', elems=lines[:i]))
+            del lines[:i]
+            return True
+        else:
+            return False
