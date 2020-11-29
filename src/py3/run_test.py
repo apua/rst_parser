@@ -3,9 +3,10 @@ from parser import Parser, Nodes, Node
 parse = Parser.parse
 document = Nodes.document
 paragraph = Nodes.paragraph
+literal_block = Nodes.literal_block
 
 
-class TestInfra:
+class TestDataStructure:
     def test_data_structure(self):
         assert Node('') == Node('', {}, [])
 
@@ -34,3 +35,36 @@ class TestDocument:
 
     def test_multiple_nodes(self):
         assert parse('a\nb\n\nc\n') == document(paragraph('a', 'b'), paragraph('c'))
+
+
+class TestLiteralBlock:
+    class TestHangColons:
+        def test_trailing_string(self):
+            assert parse('::line') == document(paragraph('::line'))
+            assert parse('::    line') == document(paragraph('::    line'))
+
+        def test_eof(self):
+            # system_message warning "Literal block expected; none found."
+            assert parse('::') == document()
+            assert parse('::\n') == document()
+
+        def test_neither_blank_nor_indent(self):
+            # system_message info "Treating the overline as ordinary text because it's so short."
+            assert parse('::\nline') == document(paragraph('::', 'line'))
+
+        def test_no_indent(self):
+            # system_message warning "Literal block expected; none found."
+            assert parse('::\n\n') == document()
+            assert parse('::\n\nline') == document(paragraph('line'))
+
+        def test_no_blank_before(self):
+            # system_message error "Unexpected indentation."
+            assert parse('::\n  literal') == document(literal_block('literal'))
+            assert parse('::\n  literal\n\nline') == document(literal_block('literal'), paragraph('line'))
+
+        def test_no_blank_after(self):
+            # system_message warning "Literal block ends without a blank line; unexpected unindent."
+            assert parse('::\n\n  literal\nline') == document(literal_block('literal'), paragraph('line'))
+
+        def test_normal_literal(self):
+            assert parse('::\n\n  literal\n\nline') == document(literal_block('literal'), paragraph('line'))
