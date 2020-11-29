@@ -76,5 +76,10 @@ class TestLiteralBlock:
             # system_message warning "Literal block ends without a blank line; unexpected unindent."
             assert parse('::\n\n  literal\nline') == document(literal_block('literal'), paragraph('line'))
 
+        def test_no_blank_before_atter(self):
+            # system_message error "Unexpected indentation."
+            # system_message warning "Literal block ends without a blank line; unexpected unindent."
+            assert parse('::\n  literal\nline') == document(literal_block('literal'), paragraph('line'))
+
         def test_normal_literal(self):
             assert parse('::\n\n  literal\n\nline') == document(literal_block('literal'), paragraph('line'))
