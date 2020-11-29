@@ -1,9 +1,19 @@
-from parser import Parser, Nodes, Node
+from parser import Parser, Node
 
 parse = Parser.parse
-document = Nodes.document
-paragraph = Nodes.paragraph
-literal_block = Nodes.literal_block
+
+def node(name):
+    """
+    >>> document()
+    Node(name='document', attrs={}, elems=[])
+    >>> document('a', 'b', 'c')
+    Node(name='document', attrs={}, elems=['a', 'b', 'c'])
+    """
+    return lambda *elems: Node(name, elems=list(elems))
+
+document = node('document')
+paragraph = node('paragraph')
+literal_block = node('literal_block')
 
 
 class TestDataStructure:
