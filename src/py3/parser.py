@@ -34,7 +34,7 @@ class Parser:
             ])
 
     def document(lines, block_parsers):
-        document = Node('document')
+        document_node = Node('document')
 
         while lines:
             if __debug__:
@@ -44,12 +44,12 @@ class Parser:
                 if (result := parse(lines)) is not None:
                     offset, elems = result
                     del lines[:offset]
-                    document.elems += elems
+                    document_node.elems += elems
                     break
 
             assert _number_lines > len(lines), (_number_lines, lines)
 
-        return document
+        return document_node
 
     @nonemtpy_input
     def blank(lines):
