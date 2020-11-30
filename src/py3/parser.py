@@ -29,7 +29,8 @@ class Parser:
         return Parser.document(lines, block_parsers=[
             Parser.blank,
             Parser.literal_block,
-            Parser.paragraph,
+            #Parser.paragraph,
+            Parser.paragraph_chain_literal,
             ])
 
     def document(lines, block_parsers):
@@ -40,11 +41,10 @@ class Parser:
                 _number_lines = len(lines)
 
             for parse in block_parsers:
-                result = parse(lines, document)
-                if result is not None:
+                if (result := parse(lines)) is not None:
                     offset, elems = result
                     del lines[:offset]
-                    document.elems.extend(elems)
+                    document.elems += elems
                     break
 
             assert _number_lines > len(lines), (_number_lines, lines)
@@ -52,7 +52,7 @@ class Parser:
         return document
 
     @nonemtpy_input
-    def blank(lines, parent=None):
+    def blank(lines):
         offset = 0
         for line in lines:
             if line == '':
@@ -64,7 +64,7 @@ class Parser:
             return offset, ()
 
     @nonemtpy_input
-    def paragraph(lines, parent):
+    def paragraph(lines):
         offset = 0
         for line in lines:
             if line != '':
@@ -76,7 +76,37 @@ class Parser:
             return offset, [Node('paragraph', elems=lines[:offset])]
 
     @nonemtpy_input
-    def literal_block(lines, parent):
+    def paragraph_chain_literal(lines):
+        offset = 0
+        literal_result = None
+        for line in lines:
+            if line != '':
+                offset += 1
+            else:
+                break
+
+            if line.endswith('::') and (literal_result := Parser.literal_block(['::'] + lines[offset:])) is not None:
+                break
+
+        if offset > 0:
+            if literal_result is None:
+                paragraph_lines = lines[:offset]
+                paragraph_node = Node('paragraph', elems=paragraph_lines)
+                return offset, [paragraph_node]
+            else:
+                lastline = lines[offset-1]
+                trailing_colon = '' if lastline.endswith(' ::') else ':'
+                paragraph_lines = lines[:offset-1] + [lastline[:-2].rstrip() + trailing_colon]
+                nodes = [Node('paragraph', elems=paragraph_lines)]
+
+                literal_offset, literal_nodes = literal_result
+                offset = offset - 1 + literal_offset
+                nodes += literal_nodes
+
+                return offset, nodes
+
+    @nonemtpy_input
+    def literal_block(lines):
         if lines[0] == '::':
             if len(lines) == 1:  # EOF
                 return 1, ()
