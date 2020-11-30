@@ -17,56 +17,66 @@ literal_block = node('literal_block')
 
 
 class TestDataStructure:
-    def test_data_structure(self):
+    def test_defaults(self):
         assert Node('') == Node('', {}, [])
-
-    def test_calling_parser(self):
-        assert document() == Node('document')
-        assert paragraph() == Node('paragraph')
 
 
 class TestDocument:
-    def test_empty_document(self):
+    def test_emtpy(self):
         assert parse('') == document()
-        assert parse(' ') == document()
         assert parse('\n') == document()
-        assert parse('\n\n') == document()
-        assert parse('\n  \n  ') == document()
 
-    def test_startswith_blanks(self):
+    def test_blanks(self):
+        assert parse(' ') == document()
+        assert parse(' \n') == document()
+        assert parse('\n ') == document()
+        assert parse('\n\n') == document()
+        assert parse(' \n\n ') == document()
+
+    def test_paragraph(self):
         assert parse('line') == document(paragraph('line'))
+        assert parse('line\nline') == document(paragraph('line', 'line'))
+
+    def test_eof(self):
+        assert parse('line\n') == document(paragraph('line'))
+
+    def test_tab_to_4_spaces(self):
+        assert parse('line\tline') == document(paragraph('line    line'))
+
+    def test_blanks_before_paragraph(self):
         assert parse('  \nline') == document(paragraph('line'))
         assert parse('  \n\nline') == document(paragraph('line'))
 
-    def test_endswith_blanks(self):
-        assert parse('line') == document(paragraph('line'))
+    def test_blanks_after_paragraph(self):
         assert parse('line\n\n') == document(paragraph('line'))
-        assert parse('line\n\n  \n') == document(paragraph('line'))
+        assert parse('line\n\n  ') == document(paragraph('line'))
 
-    def test_multiple_nodes(self):
-        assert parse('a\nb\n\nc\n') == document(paragraph('a', 'b'), paragraph('c'))
+    def test_multiple_paragraphs(self):
+        assert parse('line\n\nline') == document(paragraph('line'), paragraph('line'))
+        assert parse('line\n \nline') == document(paragraph('line'), paragraph('line'))
 
 
 class TestLiteralBlock:
     class TestHangColons:
-        def test_trailing_string(self):
+        def test_not_hang(self):
             assert parse('::line') == document(paragraph('::line'))
-            assert parse('::    line') == document(paragraph('::    line'))
+            assert parse(':: line') == document(paragraph(':: line'))
 
         def test_eof(self):
             # system_message warning "Literal block expected; none found."
             assert parse('::') == document()
             assert parse('::\n') == document()
-            assert parse('::\n\n') == document()
 
-        def test_neither_blank_nor_indent(self):
+        def test_no_blanks_no_indented(self):
             # system_message info "Treating the overline as ordinary text because it's so short."
             assert parse('::\nline') == document(paragraph('::', 'line'))
 
-        def test_no_indent(self):
+        def test_all_blanks_no_indented(self):
             # system_message warning "Literal block expected; none found."
+            assert parse('::\n ') == document()
             assert parse('::\n\n') == document()
-            assert parse('::\n\nline') == document(paragraph('line'))
+            assert parse('::\n \n') == document()
+            assert parse('::\n \nline') == document(paragraph('line'))
 
         def test_no_blank_before(self):
             # system_message error "Unexpected indentation."
@@ -82,14 +92,14 @@ class TestLiteralBlock:
             # system_message warning "Literal block ends without a blank line; unexpected unindent."
             assert parse('::\n  literal\nline') == document(literal_block('literal'), paragraph('line'))
 
-        def test_normal_literal(self):
-            assert parse('::\n\n  literal\n\nline') == document(
-                    literal_block('literal'), paragraph('line'))
+        def test_literal_block(self):
+            assert parse('::\n\n  literal\n\nline') == document(literal_block('literal'), paragraph('line'))
 
     class TestParagraphChainLiteral:
         def test_chain(self):
-            assert parse('line::\n\n literal') == document(
-                    paragraph('line:'), literal_block('literal'))
+            assert parse('line::\n\n literal') == document(paragraph('line:'), literal_block('literal'))
+
+        def test_multiple_paragraphs(self):
             assert parse('line\nline::\n\n literal') == document(
                     paragraph('line', 'line:'), literal_block('literal'))
             assert parse('line\nline::\n\n literal\n\nline') == document(
@@ -106,16 +116,22 @@ class TestLiteralBlock:
             # system_message warning "Literal block expected; none found."
             assert parse('line::') == document(paragraph('line:'))
             assert parse('line::\n') == document(paragraph('line:'))
-            assert parse('line::\n\n') == document(paragraph('line:'))
 
-        def test_none_indented_after_double_colons(self):
+        def test_all_blanks_no_indented(self):
+            # system_message warning "Literal block expected; none found."
+            assert parse('line::\n ') == document(paragraph('line:'))
+            assert parse('line::\n\n') == document(paragraph('line:'))
+            assert parse('line::\n \n') == document(paragraph('line:'))
+            assert parse('line::\n \nline') == document(paragraph('line:'), paragraph('line'))
+
+        def test_no_blanks_no_indented(self):
             assert parse('line::\nline') == document(paragraph('line::', 'line'))
 
-        def test_blank_after_double_colons(self):
+        def test_all_blanks_no_indented(self):
             # system_message warning "Literal block expected; none found."
             assert parse('line::\n\nline') == document(paragraph('line:'), paragraph('line'))
 
-        def test_literal_no_blank_before_and_after(self):
+        def test_no_blank_before_and_after(self):
             # system_message error "Unexpected indentation."
             # system_message warning "Literal block ends without a blank line; unexpected unindent.'
             assert parse('line::\n literal\nline') == document(
