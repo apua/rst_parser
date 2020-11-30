@@ -25,7 +25,7 @@ def nonemtpy_input(func):
 
 class Parser:
     def parse(text):
-        lines = list(map(str.rstrip, text.splitlines()))
+        lines = [line.rstrip().replace('\t', ' '*4) for line in text.splitlines()]
         return Parser.document(lines, block_parsers=[
             Parser.blank,
             Parser.literal_block,
