@@ -9,16 +9,14 @@ const Node = (...args) => {
   }
 };
 
-
-const repr = JSON.stringify;
-
+const assert = (cond, obj) => {if (!cond) {throw new Error(JSON.stringify(obj))}};
 
 const Parser = {
   parse(text) {
-    const lines = text.split(/\r\n|\r|\n/).map(line => line.trimEnd().replace(/\t/g, ' '));
+    const lines = text.split(/\r\n|\r|\n/).map(line => line.trimEnd().replace(/\t/g, ' '.repeat(4)));
     return Parser.document(lines, [
       Parser.blank,
-      //Parser.paragraph,
+      Parser.paragraph,
     ]);
   },
 
@@ -29,23 +27,24 @@ const Parser = {
     while (lines.length) {
       _number_lines = lines.length;
 
+      //console.dir({'--->': lines});
       for (let parse of block_parsers) {
         if ((result = parse(lines)) !== undefined) {
           [offset, elems] = result;
           lines.splice(0, offset);
-          //document_node.elems += elems
+          document_node.elems.push(...elems);
+          //console.dir({_number_lines, lines, offset, parse});
           break;
         }
       }
 
-      console.assert((_number_lines > lines.length), `${repr(_number_lines)}, ${repr(lines)}`);
-      (_number_lines > lines.length) ||  null.assertion_error;
+      assert((_number_lines > lines.length), [_number_lines, lines]);
     }
     return document_node;
   },
 
   blank(lines) {
-    console.assert(lines.length, 'nonempty_input');
+    assert(lines.length, 'the input should be nonempty');
 
     let offset, line;
 
@@ -63,9 +62,21 @@ const Parser = {
   },
 
   paragraph(lines) {
-    console.assert(lines.length, 'nonempty_input');
+    assert(lines.length, 'the input should be nonempty');
 
-    let offset;
+    let offset, line;
+
+    offset = 0;
+    for (line of lines) {
+      if (line != '') {
+        offset += 1;
+      } else {
+          break;
+      }
+    }
+
+    if (offset > 0)
+      return [offset, [Node('paragraph', lines.slice(0, offset))]];
   },
 };
 
