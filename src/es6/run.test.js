@@ -25,4 +25,12 @@ describe('Document', () => {
     expect(parse('')).toEqual(document());
     expect(parse('\n')).toEqual(document());
   });
+
+  test('blanks', () => {
+    expect(parse(' ')).toEqual(document());
+    expect(parse(' \n')).toEqual(document());
+    expect(parse('\n ')).toEqual(document());
+    expect(parse('\n\n')).toEqual(document());
+    expect(parse(' \n\n ')).toEqual(document());
+  });
 });
