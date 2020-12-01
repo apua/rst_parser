@@ -13,16 +13,6 @@ class Node:
 # Parser Definitions
 # ==================
 
-from functools import wraps
-
-def nonemtpy_input(func):
-    @wraps(func)
-    def func_(lines, *a, **kw):
-        assert lines
-        return func(lines, *a, **kw)
-    return func_
-
-
 class Parser:
     def parse(text):
         lines = [line.rstrip().replace('\t', ' '*4) for line in text.splitlines()]
@@ -51,8 +41,9 @@ class Parser:
 
         return document_node
 
-    @nonemtpy_input
     def blank(lines):
+        assert lines, 'the input should be nonempty'
+
         offset = 0
         for line in lines:
             if line == '':
@@ -63,8 +54,9 @@ class Parser:
         if offset > 0:
             return offset, ()
 
-    @nonemtpy_input
     def paragraph(lines):
+        assert lines, 'the input should be nonempty'
+
         offset = 0
         for line in lines:
             if line != '':
@@ -75,8 +67,9 @@ class Parser:
         if offset > 0:
             return offset, [Node('paragraph', elems=lines[:offset])]
 
-    @nonemtpy_input
     def paragraph_chain_literal(lines):
+        assert lines, 'the input should be nonempty'
+
         offset = 0
         literal_result = None
         for line in lines:
@@ -105,8 +98,9 @@ class Parser:
 
                 return offset, nodes
 
-    @nonemtpy_input
     def literal_block(lines):
+        assert lines, 'the input should be nonempty'
+
         if lines[0] == '::':
             if len(lines) == 1:  # EOF
                 return 1, ()
