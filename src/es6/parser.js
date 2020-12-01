@@ -16,6 +16,7 @@ const Parser = {
     const lines = text.split(/\r\n|\r|\n/).map(line => line.trimEnd().replace(/\t/g, ' '.repeat(4)));
     return Parser.document(lines, [
       Parser.blank,
+      Parser.literal_block,
       Parser.paragraph,
     ]);
   },
@@ -46,16 +47,9 @@ const Parser = {
   blank(lines) {
     assert(lines.length, 'the input should be nonempty');
 
-    let offset, line;
-
-    offset = 0;
-    for (line of lines) {
-        if (line == '') {
-            offset += 1;
-        } else {
-            break;
-        }
-    }
+    let offset = 0;
+    while (offset < lines.length && lines[offset] == '')
+      offset += 1;
 
     if (offset > 0)
       return [offset, []];
@@ -64,19 +58,53 @@ const Parser = {
   paragraph(lines) {
     assert(lines.length, 'the input should be nonempty');
 
-    let offset, line;
-
-    offset = 0;
-    for (line of lines) {
-      if (line != '') {
-        offset += 1;
-      } else {
-          break;
-      }
-    }
+    let offset = 0;
+    while (offset < lines.length && lines[offset] != '')
+      offset += 1;
 
     if (offset > 0)
       return [offset, [Node('paragraph', lines.slice(0, offset))]];
+  },
+
+  literal_block(lines) {
+    assert(lines.length, 'the input should be nonempty');
+    //console.debug('lllllll');
+
+    if (lines[0] == '::') {
+      if (lines.length == 1) {
+        return [1, []];
+      } else if (lines[1] == '' || lines[1].startsWith(' ')) {
+        /* pass */
+      } else {
+        return;
+      }
+    } else {
+      return;
+    }
+
+    let offset = 1;
+    while (offset < lines.length && lines[offset] == '')
+      offset += 1;
+    //consoledir({offset});
+
+    const indented = lines.slice(offset).filter(line => line == '' || line.startsWith(' '));
+    //consoletable({indented});
+    offset += indented.length;
+
+    if (!indented.length)
+      return [offset, []];
+
+    const width = Math.min(...indented.filter(s => s != '').map(s => s.length - s.trimStart().length));
+    const dedented = indented.map(s => s == '' ? s : s.slice(width));
+    //consoledir({lines, indented, width, dedented});
+
+    let i = dedented.length;
+    while (i > 0 && dedented[i-1] == '')
+      i -= 1;
+    dedented.splice(i);
+    //consoledir({lines, indented, width, dedented});
+
+    return [offset, [Node('literal_block', dedented)]];
   },
 };
 
