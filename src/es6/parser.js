@@ -17,7 +17,7 @@ const Parser = {
     return Parser.document(lines, [
       Parser.blank,
       Parser.literal_block,
-      Parser.paragraph,
+      Parser.paragraph_chain_literal,
     ]);
   },
 
@@ -55,15 +55,33 @@ const Parser = {
       return [offset, []];
   },
 
-  paragraph(lines) {
+  paragraph_chain_literal(lines) {
     assert(lines.length, 'the input should be nonempty');
 
-    let offset = 0;
-    while (offset < lines.length && lines[offset] != '')
+    let offset = 0, literal_result;
+    while (offset < lines.length && lines[offset] != '') {
       offset += 1;
+      if (lines[offset-1].endsWith('::')
+        && (literal_result = Parser.literal_block(['::'].concat(lines.slice(offset)))) !== undefined)
+        break;
+    }
 
-    if (offset > 0)
+    if (offset == 0)
+      return;
+
+    if (literal_result === undefined)
       return [offset, [Node('paragraph', lines.slice(0, offset))]];
+
+    const lastline = lines[offset-1];
+    const trailing_colon = lastline.endsWith(' ::') ? '' : ':';
+    const paragraph_lines = lines.slice(0, offset-1).concat([lastline.slice(0, -2).trimEnd() + trailing_colon]);
+    const nodes = [Node('paragraph', paragraph_lines)];
+    const [literal_offset, literal_nodes] = literal_result;
+
+    offset = offset - 1 + literal_offset;
+    nodes.push(...literal_nodes);
+
+    return [offset, nodes];
   },
 
   literal_block(lines) {
