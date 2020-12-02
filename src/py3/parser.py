@@ -21,7 +21,7 @@ class Parser:
             Parser.literal_block,
             #Parser.paragraph,
             Parser.paragraph_chain_literal,
-            ])
+        ])
 
     def document(lines, block_parsers):
         document_node = Node('document')
@@ -45,11 +45,8 @@ class Parser:
         assert lines, 'the input should be nonempty'
 
         offset = 0
-        for line in lines:
-            if line == '':
-                offset += 1
-            else:
-                break
+        while offset < len(lines) and lines[offset] == '':
+            offset += 1
 
         if offset > 0:
             return offset, ()
@@ -58,11 +55,8 @@ class Parser:
         assert lines, 'the input should be nonempty'
 
         offset = 0
-        for line in lines:
-            if line != '':
-                offset += 1
-            else:
-                break
+        while offset < len(lines) and lines[offset] != '':
+            offset += 1
 
         if offset > 0:
             return offset, [Node('paragraph', elems=lines[:offset])]
@@ -72,31 +66,30 @@ class Parser:
 
         offset = 0
         literal_result = None
-        for line in lines:
-            if line != '':
-                offset += 1
-            else:
+        while offset < len(lines) and lines[offset] != '':
+            offset += 1
+            if lines[offset-1].endswith('::') \
+                    and (literal_result := Parser.literal_block(['::'] + lines[offset:])) is not None:
                 break
 
-            if line.endswith('::') and (literal_result := Parser.literal_block(['::'] + lines[offset:])) is not None:
-                break
+        if offset == 0:
+            return
 
-        if offset > 0:
-            if literal_result is None:
-                paragraph_lines = lines[:offset]
-                paragraph_node = Node('paragraph', elems=paragraph_lines)
-                return offset, [paragraph_node]
-            else:
-                lastline = lines[offset-1]
-                trailing_colon = '' if lastline.endswith(' ::') else ':'
-                paragraph_lines = lines[:offset-1] + [lastline[:-2].rstrip() + trailing_colon]
-                nodes = [Node('paragraph', elems=paragraph_lines)]
+        if literal_result is None:
+            paragraph_lines = lines[:offset]
+            paragraph_node = Node('paragraph', elems=paragraph_lines)
+            return offset, [paragraph_node]
 
-                literal_offset, literal_nodes = literal_result
-                offset = offset - 1 + literal_offset
-                nodes += literal_nodes
+        lastline = lines[offset-1]
+        trailing_colon = '' if lastline.endswith(' ::') else ':'
+        paragraph_lines = lines[:offset-1] + [lastline[:-2].rstrip() + trailing_colon]
+        nodes = [Node('paragraph', elems=paragraph_lines)]
+        literal_offset, literal_nodes = literal_result
 
-                return offset, nodes
+        offset = offset - 1 + literal_offset
+        nodes += literal_nodes
+
+        return offset, nodes
 
     def literal_block(lines):
         assert lines, 'the input should be nonempty'
@@ -112,12 +105,8 @@ class Parser:
             return
 
         offset = 1
-        for line in lines[offset:]:
-            if line == '':
-                offset += 1
-            else:
-                break
-        blank_before = offset > 1
+        while offset < len(lines) and lines[offset] == '':
+            offset += 1
 
         indented = [line for line in lines[offset:] if line == '' or line.startswith(' ')]
         offset += len(indented)
@@ -129,9 +118,8 @@ class Parser:
         dedented = [s if s == '' else s[width:] for s in indented]
 
         i = len(dedented)
-        for line in reversed(dedented):
-            if line == '':
-                i -= 1
+        while i > 0 and dedented[i-1] == '':
+            i -= 1
         del dedented[i:]
 
         return offset, [Node('literal_block', elems=dedented)]
