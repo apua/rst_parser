@@ -6,7 +6,7 @@ const Node = (...args) => {
     }
 };
 
-const assert = (cond, obj) => {if (!cond) {throw new Error(JSON.stringify(obj))}};
+const assert = (cond, obj) => {if (!cond) throw new Error(JSON.stringify(obj))};
 
 const Parser = {
     parse(text) {
@@ -59,7 +59,7 @@ const Parser = {
         while (offset < lines.length && lines[offset] != '') {
             offset += 1;
             if (lines[offset-1].endsWith('::')
-                && (literal_result = Parser.literal_block(['::'].concat(lines.slice(offset)))) !== undefined)
+                    && (literal_result = Parser.literal_block(['::'].concat(lines.slice(offset)))) !== undefined)
                 break;
         }
 
