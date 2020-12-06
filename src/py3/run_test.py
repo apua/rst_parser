@@ -105,12 +105,15 @@ class TestLiteralBlock:
             assert parse('line\nline::\n\n literal\n\nline') == document(
                     paragraph('line', 'line:'), literal_block('literal'), paragraph('line'))
 
-        def test_trailing_colon(self):
+        def test_trailing_colons(self):
             assert parse('line::\n\n literal') == document(paragraph('line:'), literal_block('literal'))
             assert parse('line ::\n\n literal') == document(paragraph('line'), literal_block('literal'))
             assert parse('line  ::\n\n literal') == document(paragraph('line'), literal_block('literal'))
             assert parse('line: ::\n\n literal') == document(paragraph('line:'), literal_block('literal'))
             assert parse('line:::\n\n literal') == document(paragraph('line::'), literal_block('literal'))
+
+        def test_newline_colons(self):
+            assert parse('line\n::\n\n literal') == document(paragraph('line'), literal_block('literal'))
 
         def test_eof(self):
             # system_message warning "Literal block expected; none found."

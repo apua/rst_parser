@@ -80,9 +80,13 @@ class Parser:
             paragraph_node = Node('paragraph', elems=paragraph_lines)
             return offset, [paragraph_node]
 
-        lastline = lines[offset-1]
-        trailing_colon = '' if lastline.endswith(' ::') else ':'
-        paragraph_lines = lines[:offset-1] + [lastline[:-2].rstrip() + trailing_colon]
+        if lines[offset-1] == '::':
+            paragraph_lines = lines[:offset-1]
+        else:
+            lastline = lines[offset-1]
+            trailing_colons = '' if lastline.endswith(' ::') else ':'
+            paragraph_lines = lines[:offset-1] + [lastline[:-2].rstrip() + trailing_colons]
+
         nodes = [Node('paragraph', elems=paragraph_lines)]
         literal_offset, literal_nodes = literal_result
 
