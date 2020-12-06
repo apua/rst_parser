@@ -69,9 +69,15 @@ const Parser = {
         if (literal_result === undefined)
             return [offset, [Node('paragraph', lines.slice(0, offset))]];
 
-        const lastline = lines[offset-1];
-        const trailing_colon = lastline.endsWith(' ::') ? '' : ':';
-        const paragraph_lines = lines.slice(0, offset-1).concat([lastline.slice(0, -2).trimEnd() + trailing_colon]);
+        let paragraph_lines;
+        if (lines[offset-1] == '::') {
+            paragraph_lines = lines.slice(0, offset-1);
+        } else {
+            const lastline = lines[offset-1];
+            const trailing_colons = lastline.endsWith(' ::') ? '' : ':';
+            paragraph_lines = lines.slice(0, offset-1).concat([lastline.slice(0, -2).trimEnd() + trailing_colons]);
+        }
+
         const nodes = [Node('paragraph', paragraph_lines)];
         const [literal_offset, literal_nodes] = literal_result;
 

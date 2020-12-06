@@ -109,33 +109,44 @@ describe('Literal Block', () => {
     test('chain', () => {
       expect(parse('line::\n\n literal')).toEqual(document(paragraph('line:'), literal_block('literal')));
     });
+
     test('multiple_paragraphs', () => {
       expect(parse('line\nline::\n\n literal')).toEqual(document(paragraph('line', 'line:'), literal_block('literal')));
       expect(parse('line\nline::\n\n literal\n\nline')).toEqual(document(paragraph('line', 'line:'), literal_block('literal'), paragraph('line')));
     });
-    test('trailing_colon', () => {
+
+    test('trailing_colons', () => {
       expect(parse('line::\n\n literal')).toEqual(document(paragraph('line:'), literal_block('literal')));
       expect(parse('line ::\n\n literal')).toEqual(document(paragraph('line'), literal_block('literal')));
       expect(parse('line  ::\n\n literal')).toEqual(document(paragraph('line'), literal_block('literal')));
       expect(parse('line: ::\n\n literal')).toEqual(document(paragraph('line:'), literal_block('literal')));
       expect(parse('line:::\n\n literal')).toEqual(document(paragraph('line::'), literal_block('literal')));
     });
+
+    test('trailing_colons', () => {
+      expect(parse('line\n::\n\n literal')).toEqual(document(paragraph('line'), literal_block('literal')));
+    });
+
     test('eof', () => {
       expect(parse('line::')).toEqual(document(paragraph('line:')));
       expect(parse('line::\n')).toEqual(document(paragraph('line:')));
     });
+
     test('all_blanks_no_indented', () => {
       expect(parse('line::\n ')).toEqual(document(paragraph('line:')));
       expect(parse('line::\n\n')).toEqual(document(paragraph('line:')));
       expect(parse('line::\n \n')).toEqual(document(paragraph('line:')));
       expect(parse('line::\n \nline')).toEqual(document(paragraph('line:'), paragraph('line')));
     });
+
     test('no_blanks_no_indented', () => {
       expect(parse('line::\nline')).toEqual(document(paragraph('line::', 'line')));
     });
+
     test('all_blanks_no_indented', () => {
       expect(parse('line::\n\nline')).toEqual(document(paragraph('line:'), paragraph('line')));
     });
+
     test('no_blank_before_and_after', () => {
       expect(parse('line::\n literal\nline')).toEqual(document(paragraph('line:'), literal_block('literal'), paragraph('line')));
     });
